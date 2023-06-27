@@ -3,7 +3,7 @@ import sys
 
 class Card:
 
-    suits = ['♥','♠','◆','♣']
+    suits = ['♥','♠','♦','♣']
 
     ranks = [None, "A","2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
@@ -36,60 +36,89 @@ class Deck:
             return
         return self.cards.pop()
 
-class Player():
+class PlayerBase():
     def __init__(self, name):
         self.total = 0
         self.name = name
-        self.over = False
-        
+        self.deck = Deck()
+
+    def draw_msg(self,card):
+        d = '{} draw {} '
+        print(d.format(self.name,card))
+
+    def score_msg(self):
+        s = '{} \'s total score : {} '
+        print(s.format(self.name,self.total))
+
     def match(self):
         if self.total == 21:
-            s = '{}\'s total score : {} '
+            s = '{} \'s total score : {} '
             print(s.format(self.name,self.total))
             w = 'BLACKJACK! {} win.'
             print(w.format(self.name))
             return True
         elif self.total > 21:
-            s = '{}\'s total score : {} '
+            s = '{} \'s total score : {} '
             print(s.format(self.name,self.total))
             l = 'BUST! {} lose.'
             print(l.format(self.name,self.total))
             return True
         else:
             return False
-        
-        
-class Game():
-    def __init__(self):
-        self.deck = Deck()
-        self.p = Player('Player')
-        self.d = Player('Dealer')
-        
-    def draw_msg(self,name,card):
-        d = '{} draw {} '
-        print(d.format(name,card))
 
-    def score_msg(self,name,score):
-        s = '{}\'s total score : {} '
-        print(s.format(name,score))
 
+class User(PlayerBase):
+
+    def first_draw(self):
+        pc1 = self.deck.draw()
+        pc2 = self.deck.draw()
+        self.total += int(pc1) + int(pc2)
+        self.draw_msg(str(pc1))
+        self.draw_msg(str(pc2))
+        
     def hit_stand(self):
         while True:
             hs = input("Hit or Stand(h/s):")
             if hs == "h":
+                pc = self.deck.draw()
+                self.total += int(pc)
+                self.draw_msg(str(pc))
                 return True
             elif hs == "s":
                 return False
+
+class Dealer(PlayerBase):
+	
+    def first_draw(self):
+        dc1 = self.deck.draw()
+        dc2 = self.deck.draw()
+        self.total += int(dc1) + int(dc2)
+        self.draw_msg(str(dc1))
+        self.draw_msg("(Hole Card)")
+        return str(dc2)
+        
+    def auto_draw(self):
+        while True:
+            if self.total < 17:
+                dc = self.deck.draw()
+                self.total += int(dc)
+                self.draw_msg(str(dc))
+                return True
             else:
-                continue
-                
+                return False
+
+class Game():
+    def __init__(self):
+        self.u = User('Player')
+        self.d = Dealer('Dealer')
+
     def game_continue(self):
         while True:
             yn = input('Continue?(y/n):')
             if yn == "y":
-                self.p.total = 0
+                self.u.total = 0
                 self.d.total = 0
-                self.play_game()
+                return False
             elif yn == "n":
                 print('Exit game.')
                 sys.exit(-1)
@@ -97,53 +126,36 @@ class Game():
                 continue
 
     def play_game(self):
-        
-        pc1 = self.deck.draw()
-        dc1 = self.deck.draw()
-        pc2 = self.deck.draw()
-        dc2 = self.deck.draw()
-        self.p.total += int(pc1) + int(pc2)
-        self.d.total += int(dc1) + int(dc2)
 
-        self.draw_msg(self.p.name, str(pc1))
-        self.draw_msg(self.p.name, str(pc2))
-        self.draw_msg(self.d.name, str(dc1))
-        self.draw_msg(self.d.name, "(Hole Card)")
+        self.u.first_draw()
+        holecard = self.d.first_draw()
         
-        hs = self.hit_stand()
+        while self.u.hit_stand():
+            if self.u.match():
+                if not self.game_continue():
+                    self.play_game()
 
-        while hs:
-           pc = self.deck.draw()
-           self.p.total += int(pc)
-           self.draw_msg(self.p.name, str(pc))
-           if self.p.match():
-               self.game_continue()
-           hs = self.hit_stand()
+        self.u.score_msg()
+        
+        o = '{} \'s Hole Card : {}'
+        print(o.format(self.d.name,holecard))
             
-        self.score_msg(self.p.name,self.p.total)
-        o = '{}\'s Hole Card : {}'
-        print(o.format(self.d.name,str(dc2)))
-        
-        while self.d.total < 17:
-            dc = self.deck.draw()
-            self.d.total += int(dc)
-            self.draw_msg(self.d.name, str(dc))
+        while self.d.auto_draw():
             if self.d.match():
-                self.game_continue()
-                    
-        self.score_msg(self.d.name,self.d.total)
-                
-        if self.d.total < self.p.total:
-            print('{} win.'.format(self.p.name))
-        elif self.d.total > self.p.total:
-            print('{} lose.'.format(self.p.name))
+                if not self.game_continue():
+                    self.play_game()
+        
+        self.d.score_msg()
+        
+        if self.d.total < self.u.total:
+            print('{} win.'.format(self.u.name))
+        elif self.d.total > self.u.total:
+            print('{} lose.'.format(self.u.name))
         else:
             print('tie.')
-            
-        self.game_continue()
 
-            
-
+        if not self.game_continue():
+            self.play_game()
 
 
 if __name__ == '__main__':
