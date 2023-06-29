@@ -43,7 +43,7 @@ class PlayerBase():
         self.deck = Deck()
 
     def draw_msg(self,card):
-        d = '{} draw {} '
+        d = '{} draw {}'
         print(d.format(self.name,card))
 
     def score_msg(self):
@@ -60,7 +60,7 @@ class PlayerBase():
         elif self.total > 21:
             s = '{} \'s total score : {} '
             print(s.format(self.name,self.total))
-            l = 'BUST! {} lose.'
+            l = 'BUST! {}lose.'
             print(l.format(self.name,self.total))
             return True
         else:
@@ -75,7 +75,7 @@ class User(PlayerBase):
         self.total += int(pc1) + int(pc2)
         self.draw_msg(str(pc1))
         self.draw_msg(str(pc2))
-        
+
     def hit_stand(self):
         while True:
             hs = input("Hit or Stand(h/s):")
@@ -88,7 +88,7 @@ class User(PlayerBase):
                 return False
 
 class Dealer(PlayerBase):
-	
+
     def first_draw(self):
         dc1 = self.deck.draw()
         dc2 = self.deck.draw()
@@ -96,7 +96,7 @@ class Dealer(PlayerBase):
         self.draw_msg(str(dc1))
         self.draw_msg("(Hole Card)")
         return str(dc2)
-        
+
     def auto_draw(self):
         while True:
             if self.total < 17:
@@ -118,44 +118,49 @@ class Game():
             if yn == "y":
                 self.u.total = 0
                 self.d.total = 0
-                return False
+                return True
             elif yn == "n":
                 print('Exit game.')
                 sys.exit(-1)
-            else:
-                continue
 
     def play_game(self):
+        while True:
+            continue_flg = False
 
-        self.u.first_draw()
-        holecard = self.d.first_draw()
-        
-        while self.u.hit_stand():
-            if self.u.match():
-                if not self.game_continue():
-                    self.play_game()
+            self.u.first_draw()
+            holecard = self.d.first_draw()
 
-        self.u.score_msg()
-        
-        o = '{} \'s Hole Card : {}'
-        print(o.format(self.d.name,holecard))
-            
-        while self.d.auto_draw():
-            if self.d.match():
-                if not self.game_continue():
-                    self.play_game()
-        
-        self.d.score_msg()
-        
-        if self.d.total < self.u.total:
-            print('{} win.'.format(self.u.name))
-        elif self.d.total > self.u.total:
-            print('{} lose.'.format(self.u.name))
-        else:
-            print('tie.')
+            while self.u.hit_stand():
+                if self.u.match():
+                    continue_flg = self.game_continue()
+                    break
+            if continue_flg:
+                continue
 
-        if not self.game_continue():
-            self.play_game()
+            self.u.score_msg()
+
+            o = '{} \'s Hole Card : {}'
+            print(o.format(self.d.name, holecard))
+
+            while self.d.auto_draw():
+                if self.d.match():
+                    continue_flg = self.game_continue()
+                    break
+            if continue_flg:
+                continue
+
+            self.d.score_msg()
+
+            if self.d.total < self.u.total:
+                print('{} win.'.format(self.u.name))
+            elif self.d.total > self.u.total:
+                print('{} lose.'.format(self.u.name))
+            else:
+                print('tie')
+
+            if self.game_continue():
+                continue
+
 
 
 if __name__ == '__main__':
